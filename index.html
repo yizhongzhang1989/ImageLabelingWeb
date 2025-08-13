@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Labeling Tool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Image Labeling Tool</h1>
+            <div class="controls">
+                <input type="file" id="imageUpload" accept="image/*" class="file-input">
+                <label for="imageUpload" class="btn btn-primary">Upload Image</label>
+                
+                <input type="file" id="labelUpload" accept=".json" class="file-input">
+                <label for="labelUpload" class="btn btn-info">Load Labels</label>
+                
+                <button id="addKeypointMode" class="btn btn-mode">Add Keypoint Mode</button>
+                <button id="clearPoints" class="btn btn-secondary">Clear All Points</button>
+                <button id="downloadJson" class="btn btn-success">Download Labels (JSON)</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="info-panel">
+                    <h3>Instructions</h3>
+                    <ul>
+                        <li>Drag & drop an image or JSON file to upload</li>
+                        <li>Click "Add Keypoint Mode" then click image to add points</li>
+                        <li>Drag keypoints to move them</li>
+                        <li>Right-click keypoints to delete</li>
+                        <li>Click keypoint names in the list to edit them</li>
+                        <li>Use mouse wheel to zoom</li>
+                        <li>Drag image to pan when zoomed</li>
+                    </ul>
+                </div>
+
+                <div class="mode-controls">
+                    <h3>Current Mode</h3>
+                    <div id="currentMode" class="mode-display">
+                        Navigation Mode
+                    </div>
+                </div>
+
+                <div class="zoom-controls">
+                    <h3>Zoom Controls</h3>
+                    <button id="zoomIn" class="btn btn-small">Zoom In (+)</button>
+                    <button id="zoomOut" class="btn btn-small">Zoom Out (-)</button>
+                    <button id="resetZoom" class="btn btn-small">Reset Zoom</button>
+                    <div class="zoom-level">
+                        <span>Zoom: <span id="zoomDisplay">100%</span></span>
+                    </div>
+                </div>
+
+                <div class="keypoint-list">
+                    <h3>Keypoints (<span id="pointCount">0</span>)</h3>
+                    <div id="pointsList" class="points-container">
+                        <!-- Keypoints will be listed here -->
+                    </div>
+                </div>
+
+                <div class="image-info">
+                    <h3>Image Info</h3>
+                    <div id="imageDetails">
+                        <p>No image loaded</p>
+                    </div>
+                    <div id="mouseCoords" class="coords-display">
+                        Mouse: (-, -)
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-container">
+                <div id="imageContainer" class="image-container" 
+                     ondrop="labelingTool.handleDrop(event)" 
+                     ondragover="labelingTool.handleDragOver(event)"
+                     ondragenter="labelingTool.handleDragEnter(event)"
+                     ondragleave="labelingTool.handleDragLeave(event)">
+                    <canvas id="imageCanvas" class="image-canvas"></canvas>
+                    <div id="noImageMessage" class="no-image-message">
+                        <p>Please upload an image to start labeling</p>
+                        <p class="drag-hint">Or drag & drop an image or JSON file here</p>
+                    </div>
+                    <div id="dragOverlay" class="drag-overlay">
+                        <div class="drag-content">
+                            <p>Drop image or JSON file here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
