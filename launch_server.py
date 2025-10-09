@@ -13,7 +13,7 @@ from pathlib import Path
 
 
 class ImageLabelingServer:
-    def __init__(self, port=8000, host='localhost'):
+    def __init__(self, port=8080, host='localhost'):
         self.port = port
         self.host = host
         self.server_dir = Path(__file__).parent
@@ -95,8 +95,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python launch_server.py                    # Start on default port 8000
-  python launch_server.py --port 8080       # Start on port 8080
+  python launch_server.py                    # Start on default port 8080
+  python launch_server.py --port 8000       # Start on port 8000
   python launch_server.py --no-browser      # Don't open browser automatically
   python launch_server.py --host 0.0.0.0    # Allow external connections
         """
@@ -105,8 +105,8 @@ Examples:
     parser.add_argument(
         '--port', '-p',
         type=int,
-        default=8000,
-        help='Port to run the server on (default: 8000)'
+        default=8080,
+        help='Port to run the server on (default: 8080)'
     )
     
     parser.add_argument(
