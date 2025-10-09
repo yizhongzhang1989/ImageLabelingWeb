@@ -1,24 +1,15 @@
 # Image Labeling Tool - Python Requirements
 # 
-# This project uses only Python standard library modules.
-# No additional packages need to be installed.
-# 
 # Minimum Python version: 3.6+
 # 
-# Standard library modules used:
-# - http.server (for serving web files)
-# - socketserver (for TCP server)
-# - webbrowser (for opening browser)
-# - os, sys, argparse, pathlib (for system operations)
 
-# If you want to add additional features in the future, 
-# you can uncomment and install these optional packages:
+# Required packages:
+flask>=2.0.0
+
+# Optional packages for additional features:
 
 # For advanced image processing (optional):
 # Pillow>=8.0.0
-
-# For more advanced web server features (optional):
-# flask>=2.0.0
 
 # For data analysis of exported labels (optional):
 # pandas>=1.3.0

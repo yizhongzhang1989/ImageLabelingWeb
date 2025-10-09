@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
 Image Labeling Tool Server
-A simple HTTP server to run the Image Labeling website locally.
+A Flask-based HTTP server to run the Image Labeling website locally.
 """
 
-import http.server
-import socketserver
+from flask import Flask, send_from_directory, send_file
 import webbrowser
 import os
 import sys
@@ -18,46 +17,67 @@ class ImageLabelingServer:
         self.port = port
         self.host = host
         self.server_dir = Path(__file__).parent
+        self.app = self.create_app()
+        
+    def create_app(self):
+        """Create and configure Flask application"""
+        app = Flask(__name__, 
+                   static_folder=str(self.server_dir),
+                   static_url_path='')
+        
+        @app.route('/')
+        def index():
+            """Serve the main index.html"""
+            index_file = self.server_dir / 'index.html'
+            if index_file.exists():
+                return send_file(str(index_file))
+            else:
+                return "Error: index.html not found", 404
+        
+        @app.route('/<path:path>')
+        def serve_file(path):
+            """Serve static files"""
+            return send_from_directory(str(self.server_dir), path)
+        
+        return app
         
     def start_server(self, open_browser=True):
-        """Start the HTTP server and optionally open browser"""
+        """Start the Flask server and optionally open browser"""
         
-        # Change to the directory containing the web files
-        os.chdir(self.server_dir)
+        server_url = f"http://{self.host}:{self.port}"
         
-        # Create server
-        handler = http.server.SimpleHTTPRequestHandler
+        print("=" * 60)
+        print("🎯 Image Labeling Tool Server (Flask)")
+        print("=" * 60)
+        print(f"Server running at: {server_url}")
+        print(f"Serving files from: {self.server_dir}")
+        print("=" * 60)
+        print("Features available:")
+        print("  • Upload and label images")
+        print("  • Sub-pixel precision keypoints")
+        print("  • Zoom and pan functionality")
+        print("  • Export labels as JSON")
+        print("=" * 60)
+        print("Press Ctrl+C to stop the server")
+        print("=" * 60)
+        
+        # Open browser if requested
+        if open_browser:
+            print("Opening browser...")
+            webbrowser.open(server_url)
+            print()
         
         try:
-            with socketserver.TCPServer((self.host, self.port), handler) as httpd:
-                server_url = f"http://{self.host}:{self.port}"
-                
-                print("=" * 60)
-                print("🎯 Image Labeling Tool Server")
-                print("=" * 60)
-                print(f"Server running at: {server_url}")
-                print(f"Serving files from: {self.server_dir}")
-                print("=" * 60)
-                print("Features available:")
-                print("  • Upload and label images")
-                print("  • Sub-pixel precision keypoints")
-                print("  • Zoom and pan functionality")
-                print("  • Export labels as JSON")
-                print("=" * 60)
-                print("Press Ctrl+C to stop the server")
-                print("=" * 60)
-                
-                # Open browser if requested
-                if open_browser:
-                    print("Opening browser...")
-                    webbrowser.open(server_url)
-                    print()
-                
-                # Start serving
-                httpd.serve_forever()
-                
+            # Start Flask server
+            # Flask handles SIGTERM/SIGINT properly and cleans up sockets
+            self.app.run(
+                host=self.host,
+                port=self.port,
+                debug=False,
+                use_reloader=False
+            )
         except OSError as e:
-            if e.errno == 98:  # Address already in use
+            if e.errno == 98 or 'Address already in use' in str(e):
                 print(f"❌ Error: Port {self.port} is already in use.")
                 print(f"Try a different port: python launch_server.py --port {self.port + 1}")
             else:

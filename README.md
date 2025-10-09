@@ -161,9 +161,9 @@ python -m http.server 8000
 
 ### Architecture
 - **Frontend**: Pure HTML5, CSS3, and JavaScript (ES6+)
-- **Backend**: Python HTTP server (built-in `http.server`)
+- **Backend**: Flask web server for robust request handling
 - **Canvas**: HTML5 Canvas API for high-performance rendering
-- **No Dependencies**: Works out-of-the-box with Python 3.6+
+- **Dependencies**: Flask 2.0+ (auto-installed via requirements.txt)
 
 ### Browser Support
 - Chrome 60+
