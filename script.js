@@ -28,6 +28,8 @@ class ImageLabelingTool {
         this.imageHeight = 0;
         this.displayWidth = 0;
         this.displayHeight = 0;
+
+        this.uploadfilename = '';
         
         this.initializeEventListeners();
     }
@@ -35,6 +37,7 @@ class ImageLabelingTool {
     initializeEventListeners() {
         // File upload
         document.getElementById('imageUpload').addEventListener('change', (e) => {
+            this.uploadfilename = e.target.files[0].name;
             this.loadImage(e.target.files[0]);
         });
 
@@ -120,6 +123,7 @@ class ImageLabelingTool {
         if (files.length > 0) {
             const file = files[0];
             if (file.type.startsWith('image/')) {
+                this.uploadfilename = file.name;
                 this.loadImage(file);
             } else if (file.type === 'application/json' || file.name.endsWith('.json')) {
                 this.loadLabels(file);
@@ -706,7 +710,8 @@ class ImageLabelingTool {
             image: {
                 width: this.imageWidth,
                 height: this.imageHeight,
-                filename: document.getElementById('imageUpload').files[0]?.name || 'unknown'
+                // filename: document.getElementById('imageUpload').files[0]?.name || 'unknown'
+                filename: this.uploadfilename? this.uploadfilename : 'unknown'
             },
             keypoints: this.keypoints.map((point, index) => {
                 // Use stored original coordinates if available, otherwise calculate from display coordinates
@@ -734,7 +739,10 @@ class ImageLabelingTool {
         
         const link = document.createElement('a');
         link.href = URL.createObjectURL(dataBlob);
-        link.download = `image_labels_${Date.now()}.json`;
+        link.download = this.uploadfilename ?
+            this.uploadfilename.replace(/\.[^/.]+$/, ".json") :
+            `image_labels_${Date.now()}.json`;
+        // link.download = `image_labels_${Date.now()}.json`;
         link.click();
         
         URL.revokeObjectURL(link.href);
