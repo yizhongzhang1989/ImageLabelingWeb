@@ -10,6 +10,8 @@ class ImageLabelingTool {
         this.dragIndex = -1;
         this.isPanning = false;
         this.lastPanPoint = { x: 0, y: 0 };
+        this.isCtrlPanning = false; // Add flag for Ctrl+click panning
+
         
         // New mode system
         this.mode = 'navigation'; // 'navigation' or 'keypoint'
@@ -391,6 +393,15 @@ class ImageLabelingTool {
         if (!this.image) return;
 
         const pos = this.getMousePos(e);
+
+        // Check for Ctrl+click panning in keypoint mode
+        if (e.ctrlKey && e.button === 0 && this.mode === 'keypoint') {
+            e.preventDefault();
+            this.isCtrlPanning = true;
+            this.lastPanPoint = { x: e.clientX, y: e.clientY };
+            this.canvas.style.cursor = 'grabbing';
+            return;
+        }
         
         // Check if clicking on existing keypoint
         const clickedPointIndex = this.getKeypointAtPosition(pos.x, pos.y);
@@ -440,7 +451,7 @@ class ImageLabelingTool {
                 this.draw();
                 this.updateKeypointsList();
             }
-        } else if (this.isPanning) {
+        } else if (this.isPanning || this.isCtrlPanning) {
             // Pan image
             const deltaX = e.clientX - this.lastPanPoint.x;
             const deltaY = e.clientY - this.lastPanPoint.y;
@@ -467,7 +478,8 @@ class ImageLabelingTool {
         this.isDragging = false;
         this.isPanning = false;
         this.dragIndex = -1;
-        
+        this.isCtrlPanning = false; // Reset Ctrl+click panning
+
         // Reset cursor based on mode
         if (this.mode === 'keypoint') {
             this.canvas.style.cursor = 'crosshair';
@@ -535,9 +547,29 @@ class ImageLabelingTool {
             case '0':
                 this.resetZoom();
                 break;
+            case 'Control':
+                // Update cursor when Ctrl is pressed in keypoint mode
+                if (this.mode === 'keypoint' && !this.isDragging && !this.isPanning && !this.isCtrlPanning) {
+                    this.canvas.style.cursor = 'grab';
+                }
+                break;                
             case 'Escape':
                 if (this.mode === 'keypoint') {
                     this.toggleKeypointMode();
+                }
+                break;
+        }
+    }
+
+    // Add new method to handle key up events
+    handleKeyUp(e) {
+        if (!this.image) return;
+
+        switch(e.key) {
+            case 'Control':
+                // Update cursor when Ctrl is released in keypoint mode
+                if (this.mode === 'keypoint' && !this.isDragging && !this.isPanning && !this.isCtrlPanning) {
+                    this.canvas.style.cursor = 'crosshair';
                 }
                 break;
         }
