@@ -232,6 +232,44 @@ class ImageLabelingTool {
         reader.readAsDataURL(file);
     }
 
+    loadImageFromUrl(url) {
+        if (!url) return;
+
+        // Extract filename from URL
+        const urlParts = url.split('/');
+        const filename = urlParts[urlParts.length - 1] || 'loaded_image.jpg';
+        this.uploadfilename = filename;
+
+        // Create image element and load from URL
+        this.image = new Image();
+        this.image.crossOrigin = 'anonymous'; // Handle CORS if needed
+        
+        this.image.onload = () => {
+            this.imageWidth = this.image.width;
+            this.imageHeight = this.image.height;
+            this.setupCanvas();
+            
+            // Update image info with URL-loaded image
+            const fakeFile = {
+                name: filename,
+                size: 0, // Size unknown for URL-loaded images
+                type: 'image/jpeg'
+            };
+            this.updateImageInfo(fakeFile);
+            this.clearAllPoints();
+            document.getElementById('noImageMessage').style.display = 'none';
+            
+            console.log('Successfully loaded image from URL:', url);
+        };
+        
+        this.image.onerror = () => {
+            alert('Failed to load image from URL. Please check the image path and try again.');
+            console.error('Failed to load image from URL:', url);
+        };
+        
+        this.image.src = url;
+    }
+
     setupCanvas() {
         const container = this.imageContainer;
         // Get the actual available space
@@ -783,6 +821,101 @@ class ImageLabelingTool {
 
 // Initialize the tool when the page loads
 let labelingTool;
+let serverImageUrl = null;
+let serverImagePath = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     labelingTool = new ImageLabelingTool();
+    
+    // Check for imageUrl and imagePath parameters in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const imageUrl = urlParams.get('imageUrl');
+    const imagePath = urlParams.get('imagePath');
+    
+    if (imageUrl) {
+        console.log('Auto-loading image from URL:', imageUrl);
+        console.log('Image path:', imagePath);
+        serverImageUrl = imageUrl;  // Store for later use
+        serverImagePath = imagePath;  // Store original image path
+        labelingTool.loadImageFromUrl(imageUrl);
+        
+        // Show the Save to Server button
+        const saveToServerBtn = document.getElementById('saveToServer');
+        if (saveToServerBtn) {
+            saveToServerBtn.style.display = 'inline-block';
+            
+            // Add click handler for Save to Server button
+            saveToServerBtn.addEventListener('click', () => {
+                saveLabelsToServer();
+            });
+        }
+    }
 });
+
+// Function to save labels to server
+function saveLabelsToServer() {
+    if (!serverImageUrl) {
+        alert('No server image URL available');
+        return;
+    }
+    
+    // Get the labels data from the tool
+    const labels = {
+        image: {
+            width: labelingTool.imageWidth,
+            height: labelingTool.imageHeight,
+            filename: labelingTool.uploadfilename || 'unknown'
+        },
+        keypoints: labelingTool.keypoints.map(point => {
+            const originalCoords = (point.originalX !== undefined && point.originalY !== undefined) ? 
+                { x: point.originalX, y: point.originalY } : 
+                labelingTool.getOriginalImageCoordinates(point.x, point.y);
+            return {
+                id: point.id,
+                name: point.name,
+                x: parseFloat(originalCoords.x.toFixed(6)),
+                y: parseFloat(originalCoords.y.toFixed(6)),
+                coordinates_type: "original_image_pixels"
+            };
+        }),
+        metadata: {
+            created_at: new Date().toISOString(),
+            tool_version: "2.0.0",
+            total_keypoints: labelingTool.keypoints.length,
+            features: ["named_keypoints", "drag_drop_support", "mode_switching", "server_save"]
+        }
+    };
+    
+    // Extract the server URL from the image URL
+    const url = new URL(serverImageUrl);
+    const serverBaseUrl = `${url.protocol}//${url.host}`;
+    const saveUrl = `${serverBaseUrl}/save_labels`;
+    
+    console.log('Saving labels to server:', saveUrl);
+    console.log('Image path:', serverImagePath);
+    
+    // Send the labels to the server with image path
+    fetch(saveUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            labels: labels,
+            image_path: serverImagePath  // Pass back the original image path
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Labels saved to server successfully!');
+            console.log('Saved to:', data.path);
+        } else {
+            alert('Error saving labels: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Failed to save labels to server: ' + error);
+        console.error('Save error:', error);
+    });
+}
