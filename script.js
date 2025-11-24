@@ -232,7 +232,7 @@ class ImageLabelingTool {
         reader.readAsDataURL(file);
     }
 
-    loadImageFromUrl(url) {
+    loadImageFromUrl(url, onLoadCallback) {
         if (!url) return;
 
         // Extract filename from URL
@@ -260,6 +260,11 @@ class ImageLabelingTool {
             document.getElementById('noImageMessage').style.display = 'none';
             
             console.log('Successfully loaded image from URL:', url);
+            
+            // Call the callback after image and canvas are ready
+            if (onLoadCallback) {
+                onLoadCallback();
+            }
         };
         
         this.image.onerror = () => {
@@ -831,13 +836,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const imageUrl = urlParams.get('imageUrl');
     const imagePath = urlParams.get('imagePath');
+    const labelsUrl = urlParams.get('labelsUrl');
     
     if (imageUrl) {
         console.log('Auto-loading image from URL:', imageUrl);
         console.log('Image path:', imagePath);
         serverImageUrl = imageUrl;  // Store for later use
         serverImagePath = imagePath;  // Store original image path
-        labelingTool.loadImageFromUrl(imageUrl);
+        
+        // Load image first, then load labels after image is ready
+        labelingTool.loadImageFromUrl(imageUrl, () => {
+            // Auto-load labels if URL is provided (after image is loaded)
+            if (labelsUrl) {
+                console.log('Auto-loading labels from URL:', labelsUrl);
+                loadLabelsFromUrl(labelsUrl);
+            }
+        });
         
         // Show the Save to Server button
         const saveToServerBtn = document.getElementById('saveToServer');
@@ -851,6 +865,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+// Function to load labels from URL
+function loadLabelsFromUrl(url) {
+    if (!labelingTool.image) {
+        console.warn('Cannot load labels: image not loaded yet');
+        return;
+    }
+    
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Labels not found');
+            }
+            return response.json();
+        })
+        .then(labelData => {
+            // Validate the JSON structure
+            if (!labelData.keypoints || !Array.isArray(labelData.keypoints)) {
+                console.warn('Invalid label file format. Missing keypoints array.');
+                return;
+            }
+
+            // Load keypoints - store in original image coordinates
+            labelingTool.keypoints = labelData.keypoints.map(point => {
+                return {
+                    // Store in original image coordinates
+                    originalX: point.x,
+                    originalY: point.y,
+                    name: point.name || `Point ${point.id || labelingTool.nextKeypointId++}`,
+                    id: point.id || labelingTool.nextKeypointId++
+                };
+            });
+
+            // Update next ID
+            if (labelingTool.keypoints.length > 0) {
+                labelingTool.nextKeypointId = Math.max(...labelingTool.keypoints.map(p => p.id)) + 1;
+            }
+
+            // Convert original coordinates to display coordinates for rendering
+            labelingTool.updateKeypointDisplayCoordinates();
+            
+            labelingTool.draw();
+            labelingTool.updateKeypointsList();
+            
+            console.log(`✓ Loaded ${labelingTool.keypoints.length} keypoints from server`);
+        })
+        .catch(error => {
+            console.log('No existing labels found or error loading labels:', error);
+        });
+}
 
 // Function to save labels to server
 function saveLabelsToServer() {
